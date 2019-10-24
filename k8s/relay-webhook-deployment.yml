@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: relay-webhook
+  namespace: default
+  labels:
+    svc: relay-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      svc: relay-webhook
+  template:
+    metadata:
+      labels:
+        svc: relay-webhook
+    spec:
+      containers:
+      - name: relay-webhook
+        image: krenaut1/relay-webhook:v1.0.0
+        resources:
+          limits:
+            cpu: 100m
+            memory: 32Mi
+          requests:
+            cpu: 10m
+            memory: 16Mi
+        env:
+        - name: PROFILE
+          value: dev
+        ports:
+        - containerPort: 8080
