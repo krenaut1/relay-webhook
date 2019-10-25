@@ -1,12 +1,6 @@
 {
-    "targets":[ 
-        {
-            "name": "dev",
-            "url": "https://outlook.office.com/webhook/..."
-        },
-        {
-            "name": "prod",
-            "url": "https://outlook.office.com/webhook/..."
-        }
-    ]
+    "targets":{
+        "dev":  "https://outlook.office.com/webhook/...",
+        "prod": "https://outlook.office.com/webhook/..."
+    }
 }

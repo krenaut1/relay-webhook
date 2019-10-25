@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: relay-webhook
-        image: krenaut1/relay-webhook:v1.0.0
+        image: krenaut1/relay-webhook:v1.0.2
         resources:
           limits:
             cpu: 100m
@@ -27,6 +27,6 @@ spec:
             memory: 16Mi
         env:
         - name: PROFILE
-          value: dev
+          value: prod
         ports:
         - containerPort: 8080
