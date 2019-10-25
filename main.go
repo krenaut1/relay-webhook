@@ -13,6 +13,7 @@ import (
 type Config struct {
 	ServerAddr string
 	ServerPort int
+	Targets    map[string]string
 }
 
 var config = Config{}
@@ -32,7 +33,8 @@ func main() {
 }
 
 func loadAppProperites() {
-	err := goconfig.GoConfig(&config) // populate my configstructure from ./config directory using PROFILE environment variable
+	// populate my configstructure from ./config directory using PROFILE environment variable
+	err := goconfig.GoConfig(&config) 
 	if err != nil {
 		log.Fatalf("Error loading application properties: %v", err.Error())
 	}

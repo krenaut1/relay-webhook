@@ -22,41 +22,59 @@ type MsgIn struct {
 	GeneratorURL string
 }
 
+// relay This is the main webhook handler function
 func relay(w http.ResponseWriter, r *http.Request) {
 	var newMsg []MsgIn
-	target := mux.Vars(r)["target"]
-	if !(target == "dev" || target == "prod") {
-		log.Printf("Unknown alert target: %v\n", target)
+	// lookup MS Teams target webhook URL
+	target, found := config.Targets[mux.Vars(r)["target"]]
+	if !(found) {
+		log.Printf("Unknown alert target: %v\n", mux.Vars(r)["target"])
 		return
 	}
+
+	// read the contents of the Rancher webhook post
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println("error reading post body")
 		return
 	}
+
+	// place the Rancher webhook contents into the log
 	log.Printf("Body: %v", string(reqBody))
 
+	// unmarshal the rancher webhook JSON
 	json.Unmarshal(reqBody, &newMsg)
+
+	// loop over each alert from Ranchar and post them as individual messages in MS Teams
 	for _, msg := range newMsg {
 		sendMsg(msg, target)
 	}
-	//	events = append(events, newEvent)
+
+	//	Tell Rancher we posted the messages
 	w.WriteHeader(http.StatusCreated)
-	//	json.NewEncoder(w).Encode(newEvent)
 }
 
+// sendMsg convert each alert to simple text format and post to MS Teams webhook
 func sendMsg(msg MsgIn, target string) {
-	url := ""
+	// simplest MS Teams webhook format is a single text field
 	msgOut := "{\"text\": \""
+
+	// loop over the rancher labels map and append each entry to the text field
 	for k, v := range msg.Labels {
 		msgOut = msgOut + k + "=" + v + "<br />"
 	}
+
+	// loop over the rancher annotations map and append each entry to the text field
 	for k, v := range msg.Annotations {
 		msgOut = msgOut + k + "=" + v + "<br />"
 	}
+
+	// add the timestamp and generatorURL fields to the end of the text message
 	msgOut = msgOut + "startsAt=" + msg.StartsAt + "<br />"
 	msgOut = msgOut + "endsAt=" + msg.EndsAt + "<br />"
 	msgOut = msgOut + "generatorURL=" + msg.GeneratorURL + "<br />"
+
+	// close out the json structure
 	msgOut = msgOut + "\"}"
 
 	// configure a network transport object with timeout options
@@ -76,27 +94,24 @@ func sendMsg(msg MsgIn, target string) {
 		Transport: netTransport,
 	}
 
-	// create an https post for MS Teams
-	if target == "dev" {
-		url = "https://outlook.office.com/webhook/1dd1f352-0db5-44a1-bef5-d7be1fa950c7@2567b4c1-b0ed-40f5-aee3-58d7c5f3e2b2/IncomingWebhook/0b3167c38d114499be6cf8df5e0229b0/a8adaf56-d56d-451c-864d-3e36c366a366"
-	}
-	if target == "prod" {
-		url = "https://outlook.office.com/webhook/1dd1f352-0db5-44a1-bef5-d7be1fa950c7@2567b4c1-b0ed-40f5-aee3-58d7c5f3e2b2/IncomingWebhook/5cc384a9c26c4048a531851eafc0ce3c/a8adaf56-d56d-451c-864d-3e36c366a366"
-	}
-	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer([]byte(msgOut)))
+	// create a https post request for MS Teams
+	request, err := http.NewRequest(http.MethodPost, target, bytes.NewBuffer([]byte(msgOut)))
 	if err != nil {
 		log.Printf("Error while creating request to post alert to MS Teams: %v\n", err.Error())
 		return
 	}
 
+	// tell MS Teams that this is JSON content
 	request.Header.Set("Content-Type", "application/json")
 
-	// post the request to teams
+	// post the request to MS Teams
 	response, err := netClient.Do(request)
 	if err != nil {
 		log.Printf("Error while communicating with MS Teams: %v\n", err.Error())
 		return
 	}
+
+	// read the response from MS Teams and log it
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	log.Printf("response code: %v\n", response.StatusCode)
