@@ -25,12 +25,6 @@ type MsgIn struct {
 // relay This is the main webhook handler function
 func relay(w http.ResponseWriter, r *http.Request) {
 	var newMsg []MsgIn
-	// lookup MS Teams target webhook URL
-	target, found := config.Targets[mux.Vars(r)["target"]]
-	if !(found) {
-		log.Printf("Unknown alert target: %v\n", mux.Vars(r)["target"])
-		return
-	}
 
 	// read the contents of the Rancher webhook post
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -41,6 +35,13 @@ func relay(w http.ResponseWriter, r *http.Request) {
 
 	// place the Rancher webhook contents into the log
 	log.Printf("Body: %v", string(reqBody))
+
+	// lookup MS Teams target webhook URL
+	target, found := config.Targets[mux.Vars(r)["target"]]
+	if !(found) {
+		log.Printf("Unknown alert target: %v\n", mux.Vars(r)["target"])
+		return
+	}
 
 	// unmarshal the rancher webhook JSON
 	json.Unmarshal(reqBody, &newMsg)

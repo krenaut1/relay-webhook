@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: relay-webhook
-        image: krenaut1/relay-webhook:v1.0.2
+        image: krenaut1/relay-webhook:v1.0.3
         resources:
           limits:
             cpu: 100m
